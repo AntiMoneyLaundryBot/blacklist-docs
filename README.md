@@ -9,7 +9,7 @@ https://blacklist.purefi.io/swagger-ui/index.html#/BlackList
 https://blacklist.amlbot.com/swagger-ui/index.html#/BlackList
 
 # Access
-API Key is required to access blacklist. Please contact sales@amlbot.com
+API Key is required to access blacklist. Please contact kyc@amlbot.com
 
 # Fields description
   ```
