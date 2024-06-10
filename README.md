@@ -29,6 +29,43 @@ API Key is required to access blacklist. Please contact kyc@amlbot.com
 3. ```type``` = type of blacklisted address, i.e. "scam", or "malware", or "honeypot".
 4. ```createdAt``` = date/time address was reported
 
+# Examples
+```
+{
+  "address": "0x3bc3eb780be7b08e88e0c2b289edbe60dde3830d",
+  "addressInfo": {
+    "network": "ETHEREUM",
+    "type": "Stolen funds",
+    "createdAt": "2024-06-08T10:40:45.517Z",
+    "deletedAt": null
+  }
+}
+```
+
+``` 
+{
+  "address": "bc1qa00swfw3450z3mamf6u0zu2afzspxvnh3zjy8g",
+  "addressInfo": {
+    "network": "BITCOIN",
+    "type": "Stolen funds",
+    "createdAt": "2024-06-08T10:40:13.913Z",
+    "deletedAt": null
+  }
+}
+```
+
+``` 
+{
+  "address": "cosmos17fm6kk9r98nhvas49p5lzzr5qtkmh5hruwf692",
+  "addressInfo": {
+    "network": "COSMOS",
+    "type": "Stolen funds",
+    "createdAt": "2024-06-08T10:39:25.049Z",
+    "deletedAt": null
+  }
+}
+```
+
 # Type values
 
 Possible type values are taken from the following list: 
