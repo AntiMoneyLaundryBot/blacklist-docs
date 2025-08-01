@@ -4,8 +4,6 @@ This blacklist is regularly maintained and updated by internal company staff fro
 
 Live documentation and playground:
 
-https://blacklist.purefi.io/swagger-ui/index.html#/BlackList
-
 https://blacklist.amlbot.com/swagger-ui/index.html#/BlackList
 
 # Access
