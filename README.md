@@ -1,4 +1,4 @@
-# AMLBot / PureFi blockchain address blacklist
+# AMLBot blockchain address blacklist
 
 This blacklist is regularly maintained and updated by internal company staff from different sources, including automated scam detection systems. 
 
