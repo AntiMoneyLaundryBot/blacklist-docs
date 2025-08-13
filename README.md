@@ -2,9 +2,13 @@
 
 This blacklist is regularly maintained and updated by internal company staff from different sources, including automated scam detection systems. 
 
-Live documentation and playground:
-
-https://blacklist.amlbot.com/swagger-ui/index.html#/BlackList
+You can try it out having an API key with the following CURL command:
+  ```
+curl -X 'GET' \
+  'https://blacklist.amlbot.com/api/addresses/TFWzDGKox7TLyRfVivFdDHAp5x7BVD3j8N' \
+  -H 'accept: application/hal+json' \
+  -H 'X-API-KEY: <YOUR_API_KEY_HERE>'
+  ```
 
 # Access
 API Key is required to access blacklist. Please contact kyc@amlbot.com
