@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-09-29 - Address tags (#19)
+## 2026-09-30 - Address tags (#19)
 
 ### Added
 - Tags: extra facts about an address on a network, attributed to the writer and following the address's privacy. Format `^[a-z0-9_]+(\.[a-z0-9_]+)*$`, 1-128 characters, lowercase.

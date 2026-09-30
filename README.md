@@ -108,13 +108,13 @@ A tag is an extra fact about an address on a network, alongside its `type`. An a
 
 ```
 curl -X 'PUT' \
-  'https://api-blacklist.amlbot.com/v1/black-list/addresses/TFWzDGKox7TLyRfVivFdDHAp5x7BVD3j8N/tags/deposit.binance?network=tron' \
+  'https://api-blacklist.amlbot.com/v1/black-list/addresses/TExampleAddressDoNotUse000000000000/tags/deposit.binance?network=tron' \
   -H "X-API-KEY: $API_KEY"
 ```
 
 ```
 {
-  "address": "TFWzDGKox7TLyRfVivFdDHAp5x7BVD3j8N",
+  "address": "TExampleAddressDoNotUse000000000000",
   "network": "tron",
   "tag": "deposit.binance",
   "added": true
@@ -129,7 +129,7 @@ Adding a tag that is already present is a success with `"added": false`, and not
 
 ```
 curl -X 'DELETE' \
-  'https://api-blacklist.amlbot.com/v1/black-list/addresses/TFWzDGKox7TLyRfVivFdDHAp5x7BVD3j8N/tags/deposit.binance?network=tron' \
+  'https://api-blacklist.amlbot.com/v1/black-list/addresses/TExampleAddressDoNotUse000000000000/tags/deposit.binance?network=tron' \
   -H "X-API-KEY: $API_KEY"
 ```
 
