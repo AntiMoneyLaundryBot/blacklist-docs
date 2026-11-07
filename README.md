@@ -178,3 +178,113 @@ Tags are returned by `GET /v1/black-list/addresses?address=...` as a top-level `
 ## Legacy endpoint
 
 The legacy `GET /api/addresses/{address}` is unchanged. It never returns tags, and its 404 still means the address is clear.
+
+
+# Incidents
+
+An incident is a named event, such as an exchange hack, that addresses can be linked to. Each incident owns one tag of the form `incident.<slug>.<yyyymmdd>`. Adding that tag to an address (the tag route above) links the address to the incident. Reading the incident's addresses, or an address's incidents, is done with the routes below. All paths are under `/v1/black-list`; the key goes in `X-API-KEY`.
+
+An incident looks like this:
+
+```
+{
+  "id": "00000000-0000-4000-8000-000000000000",
+  "name": "Example exchange hack",
+  "tag": "incident.example_hack.20261030",
+  "organization": "example_org",
+  "isPublicInfo": false,
+  "description": null,
+  "incidentDate": "2026-10-30",
+  "reference": null,
+  "status": "ACTIVE",
+  "createdAt": "2026-10-30T12:00:00.000Z",
+  "updatedAt": "2026-10-30T12:00:00.000Z",
+  "createdBy": "user (example_org)"
+}
+```
+
+## Routes
+
+| # | Route | Purpose | Permission |
+|---|-------|---------|------------|
+| 1 | `POST /incidents` | Create an incident. Returns 201. | write |
+| 2 | `GET /incidents/{incidentId}` | Get an incident by id. | read |
+| 3 | `GET /incidents/by-tag/{tag}` | Get an incident by its tag. | read |
+| 4 | `GET /incidents` | Search incidents. | read |
+| 5 | `PATCH /incidents/{incidentId}` | Update an incident. | write |
+| 6 | `DELETE /incidents/{incidentId}` | Delete an incident (soft delete). | write; owner organisation or `write_address_global` |
+| 7 | `GET /incidents/{incidentId}/addresses` | List the addresses tagged with the incident. | read |
+| 8 | `GET /addresses/{address}/incidents` | List the incidents of an address. | read |
+
+### 1. Create: `POST /incidents`
+
+Body: `name` (1 to 256 characters, required), `incidentDate` (`YYYY-MM-DD`, required), `isPublicInfo` (default `false`), `description`, `reference`, `tag`. Unknown fields are rejected with 400.
+
+- Without `tag`, the tag is built from the name as `incident.<slug>.<yyyymmdd>`.
+- An explicit `tag` must match `^incident\.[a-z0-9_]+\.[0-9]{8}$` and be at most 128 characters. **Its date part must equal `incidentDate` written as `yyyymmdd`, otherwise the request is rejected with 400 (`tag date must equal incidentDate`).** An explicit tag overrides the slug only, never the date.
+- Status codes: 201 created; 400 validation (including an empty slug, a tag over 128 characters, or a date mismatch); 403 `isPublicInfo: true` without `write_address_global`; 409 the tag is already taken (a deleted incident keeps its tag); 500.
+
+```
+curl -X 'POST' \
+  'https://api-blacklist.amlbot.com/v1/black-list/incidents' \
+  -H "X-API-KEY: $API_KEY" -H 'Content-Type: application/json' \
+  -d '{"name": "Example exchange hack", "incidentDate": "2026-10-30", "tag": "incident.example_hack.20261030"}'
+```
+
+### 2 and 3. Get
+
+`GET /incidents/{incidentId}` and `GET /incidents/by-tag/{tag}` return the incident, or 404 when it does not exist or you cannot see it. A deleted incident (`"status": "DELETED"`) is returned only to its owner organisation and to keys with `read_address_global`.
+
+### 4. Search: `GET /incidents`
+
+Query: `name` (case-insensitive substring), `status` (`ACTIVE` or `DELETED`, one value, default `ACTIVE`), `isPublicInfo` (`true` or `false`), `limit` (1 to 100, default 50), `cursor`.
+
+The response is `{ "items": [...], "nextCursor": "..." | null }`. A page may be shorter than `limit`, or even empty, before the end of the results. **Keep following `nextCursor` until it is `null`.** A bad cursor gives 400.
+
+### 5. Update: `PATCH /incidents/{incidentId}`
+
+Body: any of `name`, `description`, `incidentDate`, `reference`, `isPublicInfo`. The tag cannot be changed: `tag`, or any other unknown field, gives 400. Other codes: 403 (making an incident public without `write_address_global`, or not the owner), 404.
+
+### 6. Delete: `DELETE /incidents/{incidentId}`
+
+Returns 204, also when the incident is already deleted. 403 if you are neither the owner organisation nor a holder of `write_address_global`; 404 if it is absent or not visible. The incident row is kept with `status: DELETED` and its tag stays reserved.
+
+### 7. Addresses of an incident: `GET /incidents/{incidentId}/addresses`
+
+Query: `limit` (1 to 100, default 50), `cursor`. Response: `{ "items": [{ "address", "network", "tag", "createdAt", "createdBy" }], "nextCursor": "..." | null }`. Only addresses whose labels you can see are listed. Pages may be short or empty, so follow `nextCursor` until `null`. A garbled cursor, or one from another incident, gives 400; an absent or invisible incident gives 404. `network` is `evm_eoa` for every EVM chain.
+
+### 8. Incidents of an address: `GET /addresses/{address}/incidents`
+
+Query: `network` (optional; normalised like the rest of the API). Response: `{ "items": [{ "network", "tag", "incident": { ... } }] }`. An address you cannot see returns `"items": []` with 200. If an incident lookup fails the call returns 500 and never a partial list.
+
+```
+curl -X 'GET' \
+  'https://api-blacklist.amlbot.com/v1/black-list/addresses/TExampleAddressDoNotUse000000000000/incidents?network=tron' \
+  -H "X-API-KEY: $API_KEY"
+```
+
+## Visibility rules
+
+- **An active incident is visible** if it is public (`isPublicInfo: true`), or your organisation owns it, or your key has `read_address_global`.
+- **A deleted incident is visible** only to its owner organisation and to keys with `read_address_global`.
+- **Only a key with `write_address_global` can create or publish a public incident.**
+
+### Adding and removing an incident tag (D3)
+
+The tag route (`PUT /addresses/{address}/tags/{tag}`) treats `incident.*` tags specially:
+
+- **Add:** the tag must belong to an incident that is active and visible to you. Otherwise the answer is 404, with the same body as for a hidden address, so a 404 does not tell you whether the incident exists.
+- **Remove:** allowed for an active incident visible to you. For a deleted incident, only the owner organisation and keys with `write_address_global` may remove the tag. A tag with no incident cannot be removed through this route (404).
+- Tags in other namespaces behave exactly as described in the Tags section.
+
+### Reading incident tags (D4)
+
+In `tags` on `GET /addresses` and in route 8, an `incident.*` tag is shown only when its incident is visible to you (rules above). A tag whose incident does not exist, or lost the claim on its tag, is hidden. If the incident lookup fails, the request fails with 500 rather than return a list that might include hidden incidents. When an address has no `incident.*` tags, the response is exactly what it was before.
+
+### Private incidents and the incident listing (D7)
+
+The same visibility rules apply to every incident route: search, get, by-tag, the address listing and route 8. An incident you cannot see is a 404 (or is missing from a list), never a 403. An incident whose tag was claimed by another incident (an orphan) is visible only to its owner organisation and to global readers, and is never found by tag.
+
+### LabelSniffer
+
+LabelSniffer carries only public incidents and private incidents owned by the org `amlbot`.
